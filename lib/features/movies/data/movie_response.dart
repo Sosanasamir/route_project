@@ -1,3 +1,5 @@
+import 'package:movie_app/features/movies/data/movie_model.dart';
+
 class MovieResponse {
   String? status;
   String? statusMessage;
@@ -88,6 +90,7 @@ class Movies {
   List<Torrents>? torrents;
   String? dateUploaded;
   int? dateUploadedUnix;
+  List<CastMember>? cast;
 
   Movies({
     this.id,
@@ -116,6 +119,7 @@ class Movies {
     this.torrents,
     this.dateUploaded,
     this.dateUploadedUnix,
+    this.cast,
   });
 
   Movies.fromJson(Map<String, dynamic> json) {
@@ -150,6 +154,12 @@ class Movies {
     }
     dateUploaded = json['date_uploaded'];
     dateUploadedUnix = json['date_uploaded_unix'];
+    if (json['cast'] != null) {
+      cast = <CastMember>[];
+      json['cast'].forEach((v) {
+        cast!.add(CastMember.fromJson(v));
+      });
+    }
   }
 
   Map<String, dynamic> toJson() {

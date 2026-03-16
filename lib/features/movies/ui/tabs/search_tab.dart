@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:movie_app/features/movies/logic/movie_cubit.dart';
@@ -12,53 +13,73 @@ class SearchTab extends StatefulWidget {
 }
 
 class SearchTabState extends State<SearchTab> {
-  TextEditingController search = TextEditingController();
+  TextEditingController searchController = TextEditingController();
   bool isSearching = false;
+  Timer? _debounce;
 
   @override
   void dispose() {
-    search.dispose();
+    _debounce?.cancel();
+    searchController.dispose();
     super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() {
+      isSearching = value.isNotEmpty;
+    });
+
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      // Only search if input is at least 3 characters
+      if (value.trim().length >= 3) {
+        context.read<MovieCubit>().searchMovie(value);
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0XFF121312),
+      backgroundColor: const Color(0XFF121312),
       appBar: AppBar(
-        backgroundColor: Color(0XFF121312),
+        backgroundColor: const Color(0XFF121312),
         toolbarHeight: 100,
         title: Padding(
-          padding: EdgeInsets.only(top: 40, left: 16, right: 16),
+          padding: const EdgeInsets.only(top: 40, left: 16, right: 16),
           child: Container(
             decoration: BoxDecoration(
-              color: Color(0XFF282A28),
+              color: const Color(0XFF282A28),
               borderRadius: BorderRadius.circular(12),
             ),
             child: TextField(
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
               ),
-              controller: search,
-              onChanged: (value) {
-                setState(() {
-                  isSearching = value.isNotEmpty;
-                });
-                if (value.isNotEmpty) {
-                  context.read<MovieCubit>().searchMovie(value);
-                }
-              },
+              controller: searchController,
+              onChanged: _onSearchChanged,
               decoration: InputDecoration(
                 border: InputBorder.none,
-                prefixIcon: Icon(Icons.search, color: Colors.white),
+                prefixIcon: const Icon(Icons.search, color: Colors.white),
                 hintText: 'Search',
-                hintStyle: TextStyle(
+                hintStyle: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.w400,
                 ),
+                // Add a Clear button when text exists
+                suffixIcon: searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.white),
+                        onPressed: () {
+                          searchController.clear();
+                          _onSearchChanged('');
+                        },
+                      )
+                    : null,
               ),
             ),
           ),
@@ -77,24 +98,25 @@ class SearchTabState extends State<SearchTab> {
                 ),
               ),
             ),
-
           if (isSearching)
             Expanded(
               child: BlocBuilder<MovieCubit, MovieState>(
                 builder: (context, state) {
                   if (state is MovieLoading) {
-                    return Center(child: CircularProgressIndicator());
+                    return const Center(
+                      child: CircularProgressIndicator(color: Colors.amber),
+                    );
                   } else if (state is MovieError) {
                     return Center(
                       child: Text(
                         state.message,
-                        style: TextStyle(color: Colors.white),
+                        style: const TextStyle(color: Colors.white),
                       ),
                     );
                   } else if (state is MovieSuccess) {
                     final List<MovieModel> movies = state.all;
                     if (movies.isEmpty) {
-                      return Center(
+                      return const Center(
                         child: Text(
                           'No movies found',
                           style: TextStyle(color: Colors.white),
@@ -102,58 +124,42 @@ class SearchTabState extends State<SearchTab> {
                       );
                     }
                     return GridView.builder(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       itemCount: movies.length,
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 0.65,
-                        mainAxisSpacing: 10,
-                        crossAxisSpacing: 10,
-                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 0.65,
+                            mainAxisSpacing: 10,
+                            crossAxisSpacing: 10,
+                          ),
                       itemBuilder: (context, index) {
                         final movie = movies[index];
                         return InkWell(
-                          onTap: () {
-                            Navigator.pushNamed(
-                              context,
-                              'details',
-                              arguments: movie,
-                            );
-                          },
+                          onTap: () => Navigator.pushNamed(
+                            context,
+                            'details',
+                            arguments: movie,
+                          ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            clipBehavior: Clip.antiAlias,
                             child: Stack(
                               children: [
                                 Image.network(
                                   movie.mediumCoverImage ?? '',
                                   fit: BoxFit.cover,
-                                  loadingBuilder: (context, child, progress) {
-                                    if (progress == null) return child;
-                                    return Center(
-                                      child: CircularProgressIndicator(
-                                        value:
-                                            progress.expectedTotalBytes != null
-                                            ? progress.cumulativeBytesLoaded /
-                                                  progress.expectedTotalBytes!
-                                            : null,
-                                      ),
-                                    );
-                                  },
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Center(
-                                      child: Icon(
-                                        Icons.broken_image,
-                                        color: Colors.white54,
-                                      ),
-                                    );
-                                  },
+                                  errorBuilder: (_, __, ___) => const Center(
+                                    child: Icon(
+                                      Icons.broken_image,
+                                      color: Colors.white54,
+                                    ),
+                                  ),
                                 ),
                                 Positioned(
                                   top: 8,
                                   left: 8,
                                   child: Container(
-                                    padding: EdgeInsets.symmetric(
+                                    padding: const EdgeInsets.symmetric(
                                       horizontal: 6,
                                       vertical: 2,
                                     ),
@@ -163,15 +169,15 @@ class SearchTabState extends State<SearchTab> {
                                     ),
                                     child: Row(
                                       children: [
-                                        Icon(
+                                        const Icon(
                                           Icons.star,
                                           color: Colors.yellow,
                                           size: 14,
                                         ),
-                                        SizedBox(width: 4),
+                                        const SizedBox(width: 4),
                                         Text(
                                           movie.rating?.toString() ?? '0',
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 12,
                                           ),
@@ -187,7 +193,7 @@ class SearchTabState extends State<SearchTab> {
                       },
                     );
                   }
-                  return SizedBox.shrink();
+                  return const SizedBox.shrink();
                 },
               ),
             ),

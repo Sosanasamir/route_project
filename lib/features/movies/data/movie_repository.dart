@@ -1,33 +1,36 @@
 import 'package:movie_app/features/movies/data/movie_model.dart';
 import 'package:movie_app/core/api/api_services.dart';
-import 'package:movie_app/features/movies/data/movie_response.dart';
 
 class MovieRepository {
   final ApiServices apiService = ApiServices();
 
-  // Helper method now explicitly handles the list from ApiServices
-  List<MovieModel> _mapToDomain(List<Movies> apiMovies) {
-    return apiMovies.map((movie) {
-      try {
-        return MovieModel(
-          id: movie.id,
-          title: movie.title,
-          year: movie.year?.toString(),
-          rating: (movie.rating is num)
-              ? (movie.rating as num).toDouble()
-              : 0.0,
-          smallCoverImage: movie.smallCoverImage,
-          mediumCoverImage: movie.mediumCoverImage,
-          largeCoverImage: movie.largeCoverImage,
-        );
-      } catch (e) {
-        print("ERROR MAPPING MOVIE: ${movie.title}");
-        print(
-          "RATING VALUE: ${movie.rating} | TYPE: ${movie.rating.runtimeType}",
-        );
-        rethrow;
-      }
-    }).toList();
+  
+  MovieModel _mapSingleToDomain(dynamic movie) {
+    return MovieModel(
+      id: movie.id,
+      title: movie.title,
+      year: movie.year?.toString(),
+      rating: (movie.rating is num) ? (movie.rating as num).toDouble() : 0.0,
+      smallCoverImage: movie.smallCoverImage,
+      mediumCoverImage: movie.mediumCoverImage,
+      largeCoverImage: movie.largeCoverImage,
+      summary: movie.summary,
+      runtime: movie.runtime,
+      genres: movie.genres,
+      cast: movie.cast,  
+    );
+  }
+
+   
+  List<MovieModel> _mapToDomain(List<dynamic> apiMovies) {
+    return apiMovies.map((movie) => _mapSingleToDomain(movie)).toList();
+  }
+
+  Future<MovieModel> getMovieDetails(int movieId) async {
+
+    final rawMovie = await apiService.getMovieDetails(movieId);
+
+    return _mapSingleToDomain(rawMovie);
   }
 
   Future<List<MovieModel>> getMovieSuggestions(int movieId) async {

@@ -7,8 +7,7 @@ class MovieCubit extends Cubit<MovieState> {
   final MovieRepository repository;
 
   MovieCubit(this.repository) : super(MovieInitial());
-
-  // Store data locally so we don't have to fetch it again if we switch tabs
+  
   List<MovieModel> allMovies = [];
   List<MovieModel> suggestedMovies = [];
   List<MovieModel> actionMovies = [];
@@ -16,7 +15,7 @@ class MovieCubit extends Cubit<MovieState> {
   Future<void> getHomeMovies() async {
     emit(MovieLoading());
     try {
-      // Fetch data in parallel for speed
+      
       final results = await Future.wait([
         repository.getMovieSuggestions(10),
         repository.getMoviesByGenre('Action'),
