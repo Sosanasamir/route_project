@@ -42,19 +42,19 @@ class SearchTabState extends State<SearchTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0XFF121312),
+      backgroundColor: Color(0XFF121312),
       appBar: AppBar(
-        backgroundColor: const Color(0XFF121312),
+        backgroundColor: Color(0XFF121312),
         toolbarHeight: 100,
         title: Padding(
-          padding: const EdgeInsets.only(top: 40, left: 16, right: 16),
+          padding: EdgeInsets.only(top: 40, left: 16, right: 16),
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0XFF282A28),
+              color: Color(0XFF282A28),
               borderRadius: BorderRadius.circular(12),
             ),
             child: TextField(
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
@@ -63,9 +63,9 @@ class SearchTabState extends State<SearchTab> {
               onChanged: _onSearchChanged,
               decoration: InputDecoration(
                 border: InputBorder.none,
-                prefixIcon: const Icon(Icons.search, color: Colors.white),
+                prefixIcon: Icon(Icons.search, color: Colors.white),
                 hintText: 'Search',
-                hintStyle: const TextStyle(
+                hintStyle: TextStyle(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.w400,
@@ -73,7 +73,7 @@ class SearchTabState extends State<SearchTab> {
                 // Add a Clear button when text exists
                 suffixIcon: searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.white),
+                        icon: Icon(Icons.clear, color: Colors.white),
                         onPressed: () {
                           searchController.clear();
                           _onSearchChanged('');
@@ -103,20 +103,20 @@ class SearchTabState extends State<SearchTab> {
               child: BlocBuilder<MovieCubit, MovieState>(
                 builder: (context, state) {
                   if (state is MovieLoading) {
-                    return const Center(
+                    return Center(
                       child: CircularProgressIndicator(color: Colors.amber),
                     );
                   } else if (state is MovieError) {
                     return Center(
                       child: Text(
                         state.message,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: Colors.white),
                       ),
                     );
                   } else if (state is MovieSuccess) {
                     final List<MovieModel> movies = state.all;
                     if (movies.isEmpty) {
-                      return const Center(
+                      return Center(
                         child: Text(
                           'No movies found',
                           style: TextStyle(color: Colors.white),
@@ -124,15 +124,14 @@ class SearchTabState extends State<SearchTab> {
                       );
                     }
                     return GridView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: EdgeInsets.symmetric(horizontal: 16),
                       itemCount: movies.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            childAspectRatio: 0.65,
-                            mainAxisSpacing: 10,
-                            crossAxisSpacing: 10,
-                          ),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.65,
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                      ),
                       itemBuilder: (context, index) {
                         final movie = movies[index];
                         return InkWell(
@@ -148,7 +147,7 @@ class SearchTabState extends State<SearchTab> {
                                 Image.network(
                                   movie.mediumCoverImage ?? '',
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => const Center(
+                                  errorBuilder: (_, __, ___) => Center(
                                     child: Icon(
                                       Icons.broken_image,
                                       color: Colors.white54,
@@ -159,7 +158,7 @@ class SearchTabState extends State<SearchTab> {
                                   top: 8,
                                   left: 8,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(
+                                    padding: EdgeInsets.symmetric(
                                       horizontal: 6,
                                       vertical: 2,
                                     ),
@@ -169,15 +168,15 @@ class SearchTabState extends State<SearchTab> {
                                     ),
                                     child: Row(
                                       children: [
-                                        const Icon(
+                                        Icon(
                                           Icons.star,
                                           color: Colors.yellow,
                                           size: 14,
                                         ),
-                                        const SizedBox(width: 4),
+                                        SizedBox(width: 4),
                                         Text(
                                           movie.rating?.toString() ?? '0',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             color: Colors.white,
                                             fontSize: 12,
                                           ),
@@ -193,7 +192,7 @@ class SearchTabState extends State<SearchTab> {
                       },
                     );
                   }
-                  return const SizedBox.shrink();
+                  return SizedBox.shrink();
                 },
               ),
             ),

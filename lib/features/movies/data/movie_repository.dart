@@ -4,7 +4,6 @@ import 'package:movie_app/core/api/api_services.dart';
 class MovieRepository {
   final ApiServices apiService = ApiServices();
 
-  
   MovieModel _mapSingleToDomain(dynamic movie) {
     return MovieModel(
       id: movie.id,
@@ -17,17 +16,15 @@ class MovieRepository {
       summary: movie.summary,
       runtime: movie.runtime,
       genres: movie.genres,
-      cast: movie.cast,  
+      cast: movie.cast,
     );
   }
 
-   
   List<MovieModel> _mapToDomain(List<dynamic> apiMovies) {
     return apiMovies.map((movie) => _mapSingleToDomain(movie)).toList();
   }
 
   Future<MovieModel> getMovieDetails(int movieId) async {
-
     final rawMovie = await apiService.getMovieDetails(movieId);
 
     return _mapSingleToDomain(rawMovie);
@@ -46,5 +43,10 @@ class MovieRepository {
   Future<List<MovieModel>> searchMovie(String query) async {
     final data = await apiService.searchMovies(query);
     return _mapToDomain(data);
+  }
+
+  Future<List<MovieModel>> getSimilarMovies(int movieId) async {
+    final data = await apiService.getSimilarMovies(movieId);
+    return data;
   }
 }

@@ -84,13 +84,13 @@ class HomeScreen extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, color: Colors.red, size: 60),
-          const SizedBox(height: 16),
-          Text(message, style: const TextStyle(color: Colors.white)),
-          const SizedBox(height: 10),
+          Icon(Icons.error_outline, color: Colors.red, size: 60),
+          SizedBox(height: 16),
+          Text(message, style: TextStyle(color: Colors.white)),
+          SizedBox(height: 10),
           ElevatedButton(
             onPressed: () => context.read<MovieCubit>().getHomeMovies(),
-            child: const Text('Retry'),
+            child: Text('Retry'),
           ),
         ],
       ),

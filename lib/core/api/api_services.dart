@@ -67,6 +67,37 @@ class ApiServices {
     });
   }
 
+  Future<List<MovieModel>> getSimilarMovies(int movieId) async {
+    return _safeApiCall(() async {
+      final response = await ApiClient.dio.get(
+        'movie_suggestions.json',
+        queryParameters: {'movie_id': movieId, 'with_cast': 'true'},
+      );
+
+      final movies = MovieResponse.fromJson(response.data).data?.movies ?? [];
+
+      return movies
+          .map(
+            (apiMovie) => MovieModel(
+              id: apiMovie.id,
+              title: apiMovie.title,
+              year: apiMovie.year?.toString(),
+              rating: (apiMovie.rating is num)
+                  ? (apiMovie.rating as num).toDouble()
+                  : 0.0,
+              smallCoverImage: apiMovie.smallCoverImage,
+              mediumCoverImage: apiMovie.mediumCoverImage,
+              largeCoverImage: apiMovie.largeCoverImage,
+              summary: apiMovie.summary,
+              runtime: apiMovie.runtime,
+              genres: apiMovie.genres,
+              cast: apiMovie.cast,
+            ),
+          )
+          .toList();
+    });
+  }
+
   Future<T> _safeApiCall<T>(Future<T> Function() apiCall) async {
     try {
       return await apiCall();

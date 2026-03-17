@@ -49,13 +49,13 @@ class HomeTabState extends State<HomeTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0XFF282A28),
+      backgroundColor:  Color(0XFF282A28),
       body: BlocBuilder<MovieCubit, MovieState>(
         builder: (context, state) {
           if (state is MovieLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return  Center(child: CircularProgressIndicator());
           } else if (state is MovieError) {
-            return const Center(
+            return  Center(
               child: Text(
                 'Something went wrong!',
                 style: TextStyle(
@@ -94,7 +94,7 @@ class HomeTabState extends State<HomeTab> {
                               'assets/images/title.png',
                               fit: BoxFit.cover,
                             ),
-                            const SizedBox(height: 20),
+                             SizedBox(height: 20),
 
                             // Cinematic Suggested Movies
                             SizedBox(
@@ -125,21 +125,21 @@ class HomeTabState extends State<HomeTab> {
                               ),
                             ),
 
-                            const SizedBox(height: 20),
+                             SizedBox(height: 20),
 
                             // Action Section
                             Padding(
-                              padding: const EdgeInsets.symmetric(
+                              padding:  EdgeInsets.symmetric(
                                 horizontal: 16,
                               ),
                               child: GridView.builder(
                                 shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
+                                physics:  NeverScrollableScrollPhysics(),
                                 itemCount: actionMovies.length > 6
                                     ? 6
                                     : actionMovies.length,
                                 gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                     SliverGridDelegateWithFixedCrossAxisCount(
                                       crossAxisCount: 3,
                                       mainAxisSpacing: 8,
                                       crossAxisSpacing: 8,
