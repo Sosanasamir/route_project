@@ -201,7 +201,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle("Screenshots"),
+        _buildSectionTitle("Screen Shots"),
         ListView.builder(
           shrinkWrap: true,
           physics: NeverScrollableScrollPhysics(),
@@ -234,7 +234,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSectionTitle("Similar Movies"),
+              _buildSectionTitle("Similar"),
               SizedBox(
                 height: 220,
                 child: GridView.builder(
@@ -327,21 +327,18 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
 
   Widget _buildGenres(List<String> genres) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: 16),
       child: Wrap(
         spacing: 8,
         children: genres
             .map(
               (g) => Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.white),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text(g, style: const TextStyle(color: Colors.white)),
+                child: Text(g, style: TextStyle(color: Colors.white)),
               ),
             )
             .toList(),
@@ -351,10 +348,10 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
 
   Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.all(16.0),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           color: Colors.white,
           fontSize: 18,
           fontWeight: FontWeight.bold,

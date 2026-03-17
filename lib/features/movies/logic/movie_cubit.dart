@@ -7,7 +7,7 @@ class MovieCubit extends Cubit<MovieState> {
   final MovieRepository repository;
 
   MovieCubit(this.repository) : super(MovieInitial());
-  
+
   List<MovieModel> allMovies = [];
   List<MovieModel> suggestedMovies = [];
   List<MovieModel> actionMovies = [];
@@ -15,7 +15,6 @@ class MovieCubit extends Cubit<MovieState> {
   Future<void> getHomeMovies() async {
     emit(MovieLoading());
     try {
-      
       final results = await Future.wait([
         repository.getMovieSuggestions(10),
         repository.getMoviesByGenre('Action'),
