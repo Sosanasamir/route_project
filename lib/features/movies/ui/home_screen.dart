@@ -3,96 +3,68 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:movie_app/features/movies/logic/movie_cubit.dart';
 import 'package:movie_app/features/movies/logic/navigation_cubit.dart';
 import 'package:movie_app/features/movies/data/movie_repository.dart';
-import 'package:movie_app/features/movies/logic/movie_states.dart';
 import 'package:movie_app/features/movies/ui/tabs/browse_tab.dart';
 import 'package:movie_app/features/movies/ui/tabs/home_tab.dart';
 import 'package:movie_app/features/profile/ui/profile_tab.dart';
 import 'package:movie_app/features/movies/ui/tabs/search_tab.dart';
 
 class HomeScreen extends StatelessWidget {
-  HomeScreen({super.key});
-
-  final List<Widget> tabs = const [
-    HomeTab(),
-    SearchTab(),
-    BrowseTab(),
-    ProfileTab(),
-  ];
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => NavigationCubit()),
+
         BlocProvider(
           create: (context) => MovieCubit(MovieRepository())..getHomeMovies(),
         ),
       ],
       child: BlocBuilder<NavigationCubit, int>(
-        builder: (context, navState) {
+        builder: (context, currentIndex) {
           return Scaffold(
             backgroundColor: const Color(0XFF121312),
-            // The body dynamically switches based on navState and MovieCubit state
-            body: BlocBuilder<MovieCubit, MovieState>(
-              builder: (context, movieState) {
-                if (movieState is MovieLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: Color(0XFFF6BD00)),
-                  );
-                }
 
-                if (movieState is MovieError) {
-                  return _buildErrorState(context, movieState.message);
-                }
-
-                // If success, display the selected tab
-                return tabs[navState];
-              },
+            body: IndexedStack(
+              index: currentIndex,
+              children: const [
+                HomeTab(),
+                SearchTab(),
+                BrowseTab(),
+                ProfileTab(),
+              ],
             ),
             bottomNavigationBar: BottomNavigationBar(
-              backgroundColor: const Color(0XFF282A28),
+              backgroundColor: const Color(0XFF1A1A1A),
               type: BottomNavigationBarType.fixed,
-              currentIndex: navState,
+              currentIndex: currentIndex,
               onTap: (index) =>
                   context.read<NavigationCubit>().changeTab(index),
               selectedItemColor: const Color(0XFFF6BD00),
-              unselectedItemColor: Colors.white,
+              unselectedItemColor: Colors.white60,
+              showUnselectedLabels: true,
               items: const [
-                BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home_filled),
+                  label: 'Home',
+                ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.search),
                   label: 'Search',
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.movie),
+                  icon: Icon(Icons.explore),
                   label: 'Browse',
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.person),
+                  icon: Icon(Icons.person_outline),
                   label: 'Profile',
                 ),
               ],
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildErrorState(BuildContext context, String message) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, color: Colors.red, size: 60),
-          SizedBox(height: 16),
-          Text(message, style: TextStyle(color: Colors.white)),
-          SizedBox(height: 10),
-          ElevatedButton(
-            onPressed: () => context.read<MovieCubit>().getHomeMovies(),
-            child: Text('Retry'),
-          ),
-        ],
       ),
     );
   }

@@ -1,4 +1,3 @@
-// search_cubit.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:movie_app/features/movies/data/movie_repository.dart';
 import 'package:movie_app/features/movies/logic/search_states.dart';

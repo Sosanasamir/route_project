@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class FirebaseFunctions {
-  // create user
   static Future<void> createUser(
     String email,
     String password,
@@ -11,8 +10,10 @@ class FirebaseFunctions {
     required Function onError,
   }) async {
     try {
-      await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(email: email, password: password);
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
       onSuccess();
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
@@ -27,7 +28,6 @@ class FirebaseFunctions {
     }
   }
 
-  // login
   static Future<void> login(
     String email,
     String password, {
@@ -50,8 +50,7 @@ class FirebaseFunctions {
       }
     }
   }
-  
-  // login with google
+
   static Future<void> signInWithGoogle({
     required Function onSuccess,
     required Function onError,
@@ -80,7 +79,6 @@ class FirebaseFunctions {
     }
   }
 
-  // logout
   static Future<void> logout() async {
     await FirebaseAuth.instance.signOut();
     final GoogleSignIn googleSignIn = GoogleSignIn();

@@ -2,177 +2,197 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:movie_app/features/movies/logic/movie_cubit.dart';
 import 'package:movie_app/features/movies/logic/movie_states.dart';
-import 'package:movie_app/features/movies/logic/movie_detail_cubit.dart';
 import 'package:movie_app/features/movies/data/movie_model.dart';
-import 'package:movie_app/features/movies/data/movie_repository.dart';
 import 'package:movie_app/features/movies/ui/movie_details_screen.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
 
   @override
-  HomeTabState createState() => HomeTabState();
+  State<HomeTab> createState() => _HomeTabState();
 }
 
-class HomeTabState extends State<HomeTab> {
-  int currentIndex = 0;
-  late PageController pageController;
+class _HomeTabState extends State<HomeTab> {
+  int _currentPage = 0;
+  late PageController _pageController;
 
   @override
   void initState() {
     super.initState();
-    pageController = PageController(initialPage: 0, viewportFraction: 0.85);
+    _pageController = PageController(viewportFraction: 0.8, initialPage: 0);
   }
 
   @override
   void dispose() {
-    pageController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
-  
-  void _navigateToDetails(BuildContext context, MovieModel movie) {
+  void _onMovieTap(BuildContext context, MovieModel movie) {
+    context.read<MovieCubit>().addToHistory(movie);
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => BlocProvider(
-          create: (context) => MovieDetailCubit(MovieRepository()),
-          child: MovieDetailsScreen(
-            initialMovie: movie,
-            movieId: movie.id ?? 0,
-          ),
-        ),
+        builder: (context) => const MovieDetailsScreen(),
+        settings: RouteSettings(arguments: movie),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor:  Color(0XFF282A28),
-      body: BlocBuilder<MovieCubit, MovieState>(
-        builder: (context, state) {
-          if (state is MovieLoading) {
-            return  Center(child: CircularProgressIndicator());
-          } else if (state is MovieError) {
-            return  Center(
-              child: Text(
-                'Something went wrong!',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+    return BlocBuilder<MovieCubit, MovieState>(
+      builder: (context, state) {
+        if (state is MovieLoading) {
+          return const Center(
+            child: CircularProgressIndicator(color: Color(0XFFF6BD00)),
+          );
+        }
+
+        if (state is MovieError) {
+          return Center(
+            child: Text(
+              state.message,
+              style: const TextStyle(color: Colors.red),
+            ),
+          );
+        }
+
+        if (state is MovieSuccess) {
+          return ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              _buildHeroHeader(),
+
+              const SizedBox(height: 20),
+
+              const _SectionHeader(title: "Suggested For You"),
+              _buildSuggestedSlider(state.suggested),
+
+              const SizedBox(height: 30),
+
+              const _SectionHeader(title: "Action Movies"),
+              _buildActionGrid(state.action),
+
+              const SizedBox(height: 40),
+            ],
+          );
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
+  Widget _buildHeroHeader() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Image.asset(
+          'assets/images/pic6.png',
+          width: double.infinity,
+          height: 400,
+          fit: BoxFit.cover,
+        ),
+        Container(
+          height: 400,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Colors.transparent, Color(0XFF121312)],
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 20,
+          child: Image.asset('assets/images/title.png', width: 250),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSuggestedSlider(List<MovieModel> suggested) {
+    return SizedBox(
+      height: 350,
+      child: PageView.builder(
+        controller: _pageController,
+        itemCount: suggested.length,
+        onPageChanged: (index) => setState(() => _currentPage = index),
+        itemBuilder: (context, index) {
+          final movie = suggested[index];
+          double scale = _currentPage == index ? 1.0 : 0.85;
+          return GestureDetector(
+            onTap: () => _onMovieTap(context, movie),
+            child: TweenAnimationBuilder(
+              duration: const Duration(milliseconds: 350),
+              tween: Tween(begin: scale, end: scale),
+              builder: (context, double value, child) {
+                return Transform.scale(scale: value, child: child);
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.network(
+                  movie.largeCoverImage ?? '',
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) =>
+                      Container(color: Colors.white10),
                 ),
               ),
-            );
-          } else if (state is MovieSuccess) {
-            final List<MovieModel> suggestedMovies = state.suggested;
-            final List<MovieModel> actionMovies = state.action;
-
-            return ListView(
-              children: [
-                SizedBox(
-                  height: MediaQuery.of(context).size.height,
-                  child: Stack(
-                    children: [
-                      // Background Graphic
-                      Positioned(
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        height: MediaQuery.of(context).size.height * 0.5,
-                        child: Image.asset(
-                          'assets/images/pic6.png',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-
-                      SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            Image.asset(
-                              'assets/images/title.png',
-                              fit: BoxFit.cover,
-                            ),
-                             SizedBox(height: 20),
-
-                            // Cinematic Suggested Movies
-                            SizedBox(
-                              height: MediaQuery.of(context).size.height * 0.35,
-                              width: MediaQuery.of(context).size.width * 0.55,
-                              child: PageView.builder(
-                                itemCount: suggestedMovies.length,
-                                controller: pageController,
-                                onPageChanged: (index) =>
-                                    setState(() => currentIndex = index),
-                                itemBuilder: (context, index) {
-                                  final movie = suggestedMovies[index];
-                                  return GestureDetector(
-                                    onTap: () =>
-                                        _navigateToDetails(context, movie),
-                                    child: Transform.scale(
-                                      scale: index == currentIndex ? 1.0 : 0.7,
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Image.network(
-                                          movie.mediumCoverImage ?? '',
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-
-                             SizedBox(height: 20),
-
-                            // Action Section
-                            Padding(
-                              padding:  EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: GridView.builder(
-                                shrinkWrap: true,
-                                physics:  NeverScrollableScrollPhysics(),
-                                itemCount: actionMovies.length > 6
-                                    ? 6
-                                    : actionMovies.length,
-                                gridDelegate:
-                                     SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 3,
-                                      mainAxisSpacing: 8,
-                                      crossAxisSpacing: 8,
-                                      childAspectRatio: 0.6,
-                                    ),
-                                itemBuilder: (context, index) {
-                                  final movie = actionMovies[index];
-                                  return GestureDetector(
-                                    // FIXED: Using our helper method here
-                                    onTap: () =>
-                                        _navigateToDetails(context, movie),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Image.network(
-                                        movie.mediumCoverImage ?? '',
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          }
-          return Container();
+            ),
+          );
         },
+      ),
+    );
+  }
+
+  Widget _buildActionGrid(List<MovieModel> action) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: action.length > 6 ? 6 : action.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: 0.65,
+        ),
+        itemBuilder: (context, index) {
+          final movie = action[index];
+          return GestureDetector(
+            onTap: () => _onMovieTap(context, movie),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                movie.mediumCoverImage ?? '',
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(color: Colors.white10),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }

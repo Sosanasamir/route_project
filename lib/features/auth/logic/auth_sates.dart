@@ -1,4 +1,3 @@
-// lib/features/auth/logic/auth_states.dart
 abstract class AuthState {}
 
 class AuthInitial extends AuthState {}

@@ -1,81 +1,81 @@
+// ignore_for_file: invalid_use_of_visible_for_testing_member
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:movie_app/features/movies/logic/movie_cubit.dart';
-import 'package:movie_app/features/movies/logic/movie_states.dart';
 import 'package:movie_app/features/movies/data/movie_model.dart';
+import 'package:movie_app/features/movies/logic/search_cubit.dart';
+import 'package:movie_app/features/movies/logic/search_states.dart';
+import 'package:movie_app/features/movies/logic/movie_cubit.dart';
 
 class SearchTab extends StatefulWidget {
   const SearchTab({super.key});
 
   @override
-  State<SearchTab> createState() => SearchTabState();
+  State<SearchTab> createState() => _SearchTabState();
 }
 
-class SearchTabState extends State<SearchTab> {
-  TextEditingController searchController = TextEditingController();
-  bool isSearching = false;
+class _SearchTabState extends State<SearchTab> {
+  final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
 
   @override
   void dispose() {
     _debounce?.cancel();
-    searchController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   void _onSearchChanged(String value) {
-    setState(() {
-      isSearching = value.isNotEmpty;
-    });
-
     if (_debounce?.isActive ?? false) _debounce!.cancel();
 
-    _debounce = Timer(const Duration(milliseconds: 500), () {
-      // Only search if input is at least 3 characters
-      if (value.trim().length >= 3) {
-        context.read<MovieCubit>().searchMovie(value);
+    _debounce = Timer(const Duration(milliseconds: 700), () {
+      final query = value.trim();
+      if (query.length >= 3) {
+        context.read<SearchCubit>().search(query);
+      } else if (query.isEmpty) {
+        // ignore: invalid_use_of_protected_member
+        context.read<SearchCubit>().emit(SearchInitial());
       }
     });
+    setState(() {});
+  }
+
+  void _onMovieTap(BuildContext context, MovieModel movie) {
+    context.read<MovieCubit>().addToHistory(movie);
+
+    Navigator.pushNamed(context, 'details', arguments: movie);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0XFF121312),
+      backgroundColor: const Color(0XFF121312),
       appBar: AppBar(
-        backgroundColor: Color(0XFF121312),
+        backgroundColor: const Color(0XFF121312),
+        elevation: 0,
         toolbarHeight: 100,
         title: Padding(
-          padding: EdgeInsets.only(top: 40, left: 16, right: 16),
+          padding: const EdgeInsets.only(top: 20),
           child: Container(
             decoration: BoxDecoration(
-              color: Color(0XFF282A28),
+              color: const Color(0XFF282A28),
               borderRadius: BorderRadius.circular(12),
             ),
             child: TextField(
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
-              controller: searchController,
+              controller: _searchController,
               onChanged: _onSearchChanged,
+              style: const TextStyle(color: Colors.white, fontSize: 18),
               decoration: InputDecoration(
                 border: InputBorder.none,
-                prefixIcon: Icon(Icons.search, color: Colors.white),
-                hintText: 'Search',
-                hintStyle: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                ),
-                // Add a Clear button when text exists
-                suffixIcon: searchController.text.isNotEmpty
+                prefixIcon: const Icon(Icons.search, color: Colors.white70),
+                hintText: 'Search for a movie...',
+                hintStyle: const TextStyle(color: Colors.white54, fontSize: 16),
+                suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: Icon(Icons.clear, color: Colors.white),
+                        icon: const Icon(Icons.clear, color: Colors.white70),
                         onPressed: () {
-                          searchController.clear();
+                          _searchController.clear();
                           _onSearchChanged('');
                         },
                       )
@@ -85,118 +85,128 @@ class SearchTabState extends State<SearchTab> {
           ),
         ),
       ),
-      body: Column(
+      body: BlocBuilder<SearchCubit, SearchState>(
+        builder: (context, state) {
+          if (state is SearchInitial || _searchController.text.isEmpty) {
+            return _buildPlaceholder(
+              'assets/images/search.png',
+              "Discover your next favorite movie",
+            );
+          }
+
+          if (state is SearchLoading) {
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFFF6BD00)),
+            );
+          }
+
+          if (state is SearchError) {
+            return Center(
+              child: Text(
+                state.message,
+                style: const TextStyle(color: Colors.redAccent),
+              ),
+            );
+          }
+
+          if (state is SearchSuccess) {
+            if (state.movies.isEmpty) {
+              return _buildPlaceholder(
+                'assets/images/no_results.png',
+                "No movies found for '${_searchController.text}'",
+              );
+            }
+
+            return GridView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: state.movies.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.65,
+                mainAxisSpacing: 15,
+                crossAxisSpacing: 15,
+              ),
+              itemBuilder: (context, index) {
+                return _buildMovieCard(state.movies[index]);
+              },
+            );
+          }
+
+          return const SizedBox.shrink();
+        },
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder(String assetPath, String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (!isSearching)
-            Expanded(
-              child: Center(
-                child: Image.asset(
-                  'assets/images/search.png',
-                  fit: BoxFit.cover,
-                  height: 125,
-                  width: 125,
+          Image.asset(
+            assetPath,
+            height: 150,
+            errorBuilder: (_, __, ___) => const Icon(
+              Icons.movie_creation_outlined,
+              size: 100,
+              color: Colors.white24,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white38, fontSize: 16),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMovieCard(MovieModel movie) {
+    return InkWell(
+      onTap: () => _onMovieTap(context, movie),
+      borderRadius: BorderRadius.circular(12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Image.network(
+                movie.mediumCoverImage ?? '',
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) =>
+                    Container(color: Colors.grey[900]),
+              ),
+            ),
+
+            Positioned(
+              top: 8,
+              left: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.star, color: Color(0xFFF6BD00), size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      movie.rating?.toString() ?? '0.0',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          if (isSearching)
-            Expanded(
-              child: BlocBuilder<MovieCubit, MovieState>(
-                builder: (context, state) {
-                  if (state is MovieLoading) {
-                    return Center(
-                      child: CircularProgressIndicator(color: Colors.amber),
-                    );
-                  } else if (state is MovieError) {
-                    return Center(
-                      child: Text(
-                        state.message,
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    );
-                  } else if (state is MovieSuccess) {
-                    final List<MovieModel> movies = state.all;
-                    if (movies.isEmpty) {
-                      return Center(
-                        child: Text(
-                          'No movies found',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      );
-                    }
-                    return GridView.builder(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: movies.length,
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 0.65,
-                        mainAxisSpacing: 10,
-                        crossAxisSpacing: 10,
-                      ),
-                      itemBuilder: (context, index) {
-                        final movie = movies[index];
-                        return InkWell(
-                          onTap: () => Navigator.pushNamed(
-                            context,
-                            'details',
-                            arguments: movie,
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Stack(
-                              children: [
-                                Image.network(
-                                  movie.mediumCoverImage ?? '',
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Center(
-                                    child: Icon(
-                                      Icons.broken_image,
-                                      color: Colors.white54,
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  top: 8,
-                                  left: 8,
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black54,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.star,
-                                          color: Colors.yellow,
-                                          size: 14,
-                                        ),
-                                        SizedBox(width: 4),
-                                        Text(
-                                          movie.rating?.toString() ?? '0',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  }
-                  return SizedBox.shrink();
-                },
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
