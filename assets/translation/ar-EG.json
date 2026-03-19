@@ -1,0 +1,18 @@
+{
+  "Email": "البريد الإلكتروني",
+  "Password": "كلمة المرور",
+  "Confirm_Password": "تأكيد كلمة المرور",
+  "Phone_Number": "رقم الهاتف",
+  "Create_Account": "إنشاء حساب",
+  "Already_Have_Account": "لديك حساب بالفعل؟",
+  "Login": "تسجيل الدخول",
+  "Forget_Password": "نسيت كلمة المرور؟",
+  "Register": "تسجيل",
+  "Avatar": "الصورة الرمزية",
+  "Name": "الاسم",
+  "Login_With_Google": "تسجيل الدخول بواسطة جوجل",
+  "OR": "أو",
+  "Dont_Have_Account": "ليس لديك حساب؟",
+  "Verify_Email": "تأكيد البريد الإلكتروني",
+  "Create_One": "إنشاء حساب"
+}
