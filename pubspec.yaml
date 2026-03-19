@@ -31,6 +31,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/search.png  # Explicitly naming important assets is safer
     - assets/profile/
     - assets/translation/
 

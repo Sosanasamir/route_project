@@ -4,22 +4,21 @@ import 'package:movie_app/features/movies/data/movie_repository.dart';
 import 'movie_states.dart';
 
 class MovieCubit extends Cubit<MovieState> {
-  final MovieRepository repository;
+  final MovieRepository movieRepository;
 
-  MovieCubit(this.repository) : super(MovieInitial());
+  MovieCubit(this.movieRepository) : super(MovieInitial());
 
   List<MovieModel> allMovies = [];
   List<MovieModel> suggestedMovies = [];
   List<MovieModel> actionMovies = [];
-
   List<MovieModel> historyMovies = [];
 
   Future<void> getHomeMovies() async {
     emit(MovieLoading());
     try {
       final results = await Future.wait([
-        repository.getMovieSuggestions(10),
-        repository.getMoviesByGenre('Action'),
+        movieRepository.getMovieSuggestions(10),
+        movieRepository.getMoviesByGenre('Action'),
       ]);
 
       suggestedMovies = results[0];
@@ -34,38 +33,9 @@ class MovieCubit extends Cubit<MovieState> {
 
   void addToHistory(MovieModel movie) {
     historyMovies.removeWhere((item) => item.id == movie.id);
-
     historyMovies.insert(0, movie);
-
-    if (historyMovies.length > 20) {
-      historyMovies.removeLast();
-    }
-
+    if (historyMovies.length > 20) historyMovies.removeLast();
     _emitSuccess();
-  }
-
-  Future<void> getMovies() async {
-    if (allMovies.isNotEmpty) {
-      _emitSuccess();
-      return;
-    }
-    await getHomeMovies();
-  }
-
-  Future<void> searchMovie(String query) async {
-    if (query.isEmpty) {
-      _emitSuccess();
-      return;
-    }
-
-    emit(MovieLoading());
-    try {
-      final searchedMovies = await repository.searchMovie(query);
-
-      emit(MovieSuccess(suggested: [], action: [], all: searchedMovies));
-    } catch (e) {
-      emit(MovieError(e.toString()));
-    }
   }
 
   void _emitSuccess() {
