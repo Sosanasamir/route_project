@@ -5,19 +5,13 @@ class MovieRepository {
   final ApiServices apiService = ApiServices();
 
   MovieModel _mapSingleToDomain(dynamic movie) {
-    return MovieModel(
-      id: movie.id,
-      title: movie.title,
-      year: movie.year?.toString(),
-      rating: (movie.rating is num) ? (movie.rating as num).toDouble() : 0.0,
-      smallCoverImage: movie.smallCoverImage,
-      mediumCoverImage: movie.mediumCoverImage,
-      largeCoverImage: movie.largeCoverImage,
-      summary: movie.summary,
-      runtime: movie.runtime,
-      genres: movie.genres,
-      cast: movie.cast,
-    );
+    if (movie is MovieModel) {
+      return movie;
+    } else if (movie is Map<String, dynamic>) {
+      return MovieModel.fromJson(movie);
+    } else {
+      return MovieModel();
+    }
   }
 
   List<MovieModel> _mapToDomain(List<dynamic> apiMovies) {
@@ -26,7 +20,6 @@ class MovieRepository {
 
   Future<MovieModel> getMovieDetails(int movieId) async {
     final rawMovie = await apiService.getMovieDetails(movieId);
-
     return _mapSingleToDomain(rawMovie);
   }
 
@@ -47,6 +40,7 @@ class MovieRepository {
 
   Future<List<MovieModel>> getSimilarMovies(int movieId) async {
     final data = await apiService.getSimilarMovies(movieId);
-    return data;
+
+    return _mapToDomain(data);
   }
 }

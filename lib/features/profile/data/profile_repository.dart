@@ -22,7 +22,7 @@ class ProfileRepository {
     }
   }
 
-  Future<void> sendPasswordReset() async {
+  Future<void> sendPasswordReset(String email) async {
     try {
       final email = _auth.currentUser?.email;
       if (email != null) {

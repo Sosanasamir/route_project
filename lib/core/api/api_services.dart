@@ -5,33 +5,64 @@ import 'package:movie_app/features/movies/data/movie_model.dart';
 import 'package:movie_app/features/movies/data/movie_response.dart';
 
 class ApiServices {
-  Future<List<Movies>> getMovieSuggestions(int movieId) async {
+  MovieModel _mapToMovieModel(dynamic m) {
+    return MovieModel(
+      id: m.id,
+      title: m.title,
+      year: m.year?.toString(),
+      rating: (m.rating is num) ? (m.rating as num).toDouble() : 0.0,
+      smallCoverImage: m.smallCoverImage,
+      mediumCoverImage: m.mediumCoverImage,
+      largeCoverImage: m.largeCoverImage,
+
+      summary: m.descriptionFull ?? m.summary,
+      runtime: m.runtime,
+      genres: m.genres != null ? List<String>.from(m.genres!) : [],
+
+      cast: m.cast != null
+          ? List<CastMember>.from(
+              m.cast!.map(
+                (c) => CastMember(
+                  name: c.name,
+                  characterName: c.characterName,
+                  photoUrl: c.urlSmallImage,
+                ),
+              ),
+            )
+          : [],
+    );
+  }
+
+  Future<List<MovieModel>> getMovieSuggestions(int movieId) async {
     return _safeApiCall(() async {
       final response = await ApiClient.dio.get(
         'movie_suggestions.json',
         queryParameters: {'movie_id': movieId, 'with_cast': 'true'},
       );
-      return MovieResponse.fromJson(response.data).data?.movies ?? [];
+      final movies = MovieResponse.fromJson(response.data).data?.movies ?? [];
+      return movies.map((m) => _mapToMovieModel(m)).toList();
     });
   }
 
-  Future<List<Movies>> getMoviesByGenre(String genre) async {
+  Future<List<MovieModel>> getMoviesByGenre(String genre) async {
     return _safeApiCall(() async {
       final response = await ApiClient.dio.get(
         'list_movies.json',
-        queryParameters: {'limit': 50, 'genre': genre},
+        queryParameters: {'limit': 20, 'genre': genre, 'sort_by': 'year'},
       );
-      return MovieResponse.fromJson(response.data).data?.movies ?? [];
+      final movies = MovieResponse.fromJson(response.data).data?.movies ?? [];
+      return movies.map((m) => _mapToMovieModel(m)).toList();
     });
   }
 
-  Future<List<Movies>> searchMovies(String query) async {
+  Future<List<MovieModel>> searchMovies(String query) async {
     return _safeApiCall(() async {
       final response = await ApiClient.dio.get(
         'list_movies.json',
-        queryParameters: {'limit': 50, 'query_term': query},
+        queryParameters: {'limit': 20, 'query_term': query},
       );
-      return MovieResponse.fromJson(response.data).data?.movies ?? [];
+      final movies = MovieResponse.fromJson(response.data).data?.movies ?? [];
+      return movies.map((m) => _mapToMovieModel(m)).toList();
     });
   }
 
@@ -39,7 +70,11 @@ class ApiServices {
     return _safeApiCall(() async {
       final response = await ApiClient.dio.get(
         'movie_details.json',
-        queryParameters: {'movie_id': movieId},
+        queryParameters: {
+          'movie_id': movieId,
+          'with_images': 'true',
+          'with_cast': 'true',
+        },
       );
 
       final responseObj = MovieDetailsResponse.fromJson(response.data);
@@ -49,60 +84,19 @@ class ApiServices {
         throw Exception("Movie details not found for ID: $movieId");
       }
 
-      return MovieModel(
-        id: apiMovie.id,
-        title: apiMovie.title,
-        year: apiMovie.year?.toString(),
-        rating: (apiMovie.rating is num)
-            ? (apiMovie.rating as num).toDouble()
-            : 0.0,
-        smallCoverImage: apiMovie.smallCoverImage,
-        mediumCoverImage: apiMovie.mediumCoverImage,
-        largeCoverImage: apiMovie.largeCoverImage,
-        summary: apiMovie.summary,
-        runtime: apiMovie.runtime,
-        genres: apiMovie.genres,
-        cast: apiMovie.cast,
-      );
+      return _mapToMovieModel(apiMovie);
     });
   }
 
   Future<List<MovieModel>> getSimilarMovies(int movieId) async {
-    return _safeApiCall(() async {
-      final response = await ApiClient.dio.get(
-        'movie_suggestions.json',
-        queryParameters: {'movie_id': movieId, 'with_cast': 'true'},
-      );
-
-      final movies = MovieResponse.fromJson(response.data).data?.movies ?? [];
-
-      return movies
-          .map(
-            (apiMovie) => MovieModel(
-              id: apiMovie.id,
-              title: apiMovie.title,
-              year: apiMovie.year?.toString(),
-              rating: (apiMovie.rating is num)
-                  ? (apiMovie.rating as num).toDouble()
-                  : 0.0,
-              smallCoverImage: apiMovie.smallCoverImage,
-              mediumCoverImage: apiMovie.mediumCoverImage,
-              largeCoverImage: apiMovie.largeCoverImage,
-              summary: apiMovie.summary,
-              runtime: apiMovie.runtime,
-              genres: apiMovie.genres,
-              cast: apiMovie.cast,
-            ),
-          )
-          .toList();
-    });
+    return getMovieSuggestions(movieId);
   }
 
   Future<T> _safeApiCall<T>(Future<T> Function() apiCall) async {
     try {
       return await apiCall();
     } catch (e) {
-      debugPrint("API Error: $e");
+      debugPrint("API Error in ApiServices: $e");
       rethrow;
     }
   }

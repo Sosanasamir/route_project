@@ -1,5 +1,3 @@
-// ignore_for_file: invalid_use_of_visible_for_testing_member
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -29,12 +27,13 @@ class _SearchTabState extends State<SearchTab> {
   void _onSearchChanged(String value) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
 
-    _debounce = Timer(const Duration(milliseconds: 700), () {
+    _debounce = Timer(const Duration(milliseconds: 500), () {
       final query = value.trim();
-      if (query.length >= 3) {
+
+      if (query.isNotEmpty) {
         context.read<SearchCubit>().search(query);
-      } else if (query.isEmpty) {
-        // ignore: invalid_use_of_protected_member
+      } else {
+        // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
         context.read<SearchCubit>().emit(SearchInitial());
       }
     });
@@ -43,7 +42,6 @@ class _SearchTabState extends State<SearchTab> {
 
   void _onMovieTap(BuildContext context, MovieModel movie) {
     context.read<MovieCubit>().addToHistory(movie);
-
     Navigator.pushNamed(context, 'details', arguments: movie);
   }
 
@@ -61,14 +59,16 @@ class _SearchTabState extends State<SearchTab> {
             decoration: BoxDecoration(
               color: const Color(0XFF282A28),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white10),
             ),
             child: TextField(
               controller: _searchController,
               onChanged: _onSearchChanged,
+              textInputAction: TextInputAction.search,
               style: const TextStyle(color: Colors.white, fontSize: 18),
               decoration: InputDecoration(
                 border: InputBorder.none,
-                prefixIcon: const Icon(Icons.search, color: Colors.white70),
+                prefixIcon: const Icon(Icons.search, color: Color(0XFFF6BD00)),
                 hintText: 'Search for a movie...',
                 hintStyle: const TextStyle(color: Colors.white54, fontSize: 16),
                 suffixIcon: _searchController.text.isNotEmpty
@@ -118,7 +118,7 @@ class _SearchTabState extends State<SearchTab> {
             }
 
             return GridView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               itemCount: state.movies.length,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
@@ -126,9 +126,8 @@ class _SearchTabState extends State<SearchTab> {
                 mainAxisSpacing: 15,
                 crossAxisSpacing: 15,
               ),
-              itemBuilder: (context, index) {
-                return _buildMovieCard(state.movies[index]);
-              },
+              itemBuilder: (context, index) =>
+                  _buildMovieCard(state.movies[index]),
             );
           }
 
@@ -139,26 +138,31 @@ class _SearchTabState extends State<SearchTab> {
   }
 
   Widget _buildPlaceholder(String assetPath, String message) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset(
-            assetPath,
-            height: 150,
-            errorBuilder: (_, __, ___) => const Icon(
-              Icons.movie_creation_outlined,
-              size: 100,
-              color: Colors.white24,
+    return SingleChildScrollView(
+      child: Center(
+        child: Column(
+          children: [
+            const SizedBox(height: 100),
+            Image.asset(
+              assetPath,
+              height: 180,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.movie_filter,
+                size: 100,
+                color: Colors.white10,
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white38, fontSize: 16),
-          ),
-        ],
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white38, fontSize: 16),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -166,20 +170,21 @@ class _SearchTabState extends State<SearchTab> {
   Widget _buildMovieCard(MovieModel movie) {
     return InkWell(
       onTap: () => _onMovieTap(context, movie),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(15),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(15),
         child: Stack(
           children: [
             Positioned.fill(
               child: Image.network(
                 movie.mediumCoverImage ?? '',
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    Container(color: Colors.grey[900]),
+                errorBuilder: (_, __, ___) => Container(
+                  color: Colors.grey[900],
+                  child: const Icon(Icons.broken_image, color: Colors.white24),
+                ),
               ),
             ),
-
             Positioned(
               top: 8,
               left: 8,

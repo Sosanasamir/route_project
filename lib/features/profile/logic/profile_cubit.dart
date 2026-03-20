@@ -30,17 +30,17 @@ class ProfileCubit extends Cubit<ProfileState> {
   ProfileCubit(this.repository) : super(ProfileInitial());
 
   void loadUserProfile() {
-    emit(ProfileLoading());
     final user = repository.getCurrentUser();
     if (user != null) {
       emit(ProfileSuccess(user));
     } else {
-      emit(ProfileError("No user found"));
+      emit(ProfileError("No user session found. Please login again."));
     }
   }
 
   Future<void> logout() async {
     try {
+      emit(ProfileLoading());
       await repository.logout();
       emit(ProfileLoggedOut());
     } catch (e) {
@@ -52,21 +52,32 @@ class ProfileCubit extends Cubit<ProfileState> {
     emit(ProfileLoading());
     try {
       await repository.updateProfile(name: name, avatarPath: avatarPath);
-      loadUserProfile();
+
+      final updatedUser = repository.getCurrentUser();
+      if (updatedUser != null) {
+        emit(ProfileSuccess(updatedUser));
+      }
     } catch (e) {
       emit(ProfileError(e.toString()));
     }
   }
 
-  Future<void> resetPassword() async {
+  Future<void> resetPassword(String email) async {
     emit(ProfileLoading());
     try {
-      await repository.sendPasswordReset();
+      await repository.sendPasswordReset(email);
       emit(ProfileResetEmailSent());
-
-      loadUserProfile();
     } catch (e) {
       emit(ProfileError(e.toString()));
+    }
+  }
+
+  Future<void> sendPasswordResetToCurrent() async {
+    final user = repository.getCurrentUser();
+    if (user != null && user.email != null) {
+      await resetPassword(user.email!);
+    } else {
+      emit(ProfileError("Could not find user email."));
     }
   }
 

@@ -12,24 +12,32 @@ class BrowseTab extends StatefulWidget {
 }
 
 class _BrowseTabState extends State<BrowseTab> {
-  String selectedGenre = "Action";
-  final List<String> genres = [
-    "Action",
-    "Comedy",
-    "Drama",
-    "Animation",
-    "Horror",
-    "Romance",
-    "Sci-Fi",
-    "Thriller",
-  ];
+  String? selectedGenre;
+  List<String> dynamicGenres = [];
 
   @override
   void initState() {
     super.initState();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<BrowseCubit>().getMoviesByGenre(selectedGenre);
+      context.read<BrowseCubit>().getBrowseMovies();
+    });
+  }
+
+  void _extractGenres(List<MovieModel> movies) {
+    if (dynamicGenres.isNotEmpty) return;
+
+    final Set<String> genreSet = {};
+    for (var movie in movies) {
+      if (movie.genres != null) {
+        genreSet.addAll(movie.genres!);
+      }
+    }
+
+    setState(() {
+      dynamicGenres = genreSet.toList()..sort();
+      if (dynamicGenres.isNotEmpty && selectedGenre == null) {
+        selectedGenre = dynamicGenres.first;
+      }
     });
   }
 
@@ -38,87 +46,74 @@ class _BrowseTabState extends State<BrowseTab> {
     return Scaffold(
       backgroundColor: const Color(0XFF121312),
       body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 10),
+        child: BlocConsumer<BrowseCubit, MovieState>(
+          listener: (context, state) {
+            if (state is MovieSuccess) {
+              _extractGenres(state.all);
+            }
+          },
+          builder: (context, state) {
+            return Column(
+              children: [
+                const SizedBox(height: 10),
+                if (dynamicGenres.isNotEmpty) _buildGenreList(),
 
-            SizedBox(
-              height: 60,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                itemCount: genres.length,
-                itemBuilder: (context, index) {
-                  final genre = genres[index];
-                  bool isSelected = selectedGenre == genre;
-                  return GestureDetector(
-                    onTap: () {
-                      if (selectedGenre != genre) {
-                        setState(() {
-                          selectedGenre = genre;
-                        });
-                        context.read<BrowseCubit>().getMoviesByGenre(genre);
-                      }
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 8,
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0XFFF6BD00)
-                            : Colors.transparent,
-                        border: Border.all(
-                          color: const Color(0XFFF6BD00),
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Center(
-                        child: Text(
-                          genre,
-                          style: TextStyle(
-                            color: isSelected
-                                ? Colors.black
-                                : const Color(0XFFF6BD00),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                Expanded(
+                  child: state is MovieLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0XFFF6BD00),
                           ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            Expanded(
-              child: BlocBuilder<BrowseCubit, MovieState>(
-                builder: (context, state) {
-                  if (state is MovieLoading) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0XFFF6BD00),
-                      ),
-                    );
-                  } else if (state is MovieSuccess) {
-                    return _buildMoviesGrid(state.all);
-                  } else if (state is MovieError) {
-                    return Center(
-                      child: Text(
-                        state.message,
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    );
-                  }
-                  return const SizedBox();
-                },
-              ),
-            ),
-          ],
+                        )
+                      : state is MovieSuccess
+                      ? _buildMoviesGrid(state.all)
+                      : const SizedBox(),
+                ),
+              ],
+            );
+          },
         ),
+      ),
+    );
+  }
+
+  Widget _buildGenreList() {
+    return SizedBox(
+      height: 60,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        itemCount: dynamicGenres.length,
+        itemBuilder: (context, index) {
+          final genre = dynamicGenres[index];
+          bool isSelected = selectedGenre == genre;
+          return GestureDetector(
+            onTap: () {
+              setState(() => selectedGenre = genre);
+              context.read<BrowseCubit>().getMoviesByGenre(genre);
+            },
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? const Color(0XFFF6BD00)
+                    : Colors.transparent,
+                border: Border.all(color: const Color(0XFFF6BD00), width: 2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text(
+                  genre,
+                  style: TextStyle(
+                    color: isSelected ? Colors.black : const Color(0XFFF6BD00),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -126,10 +121,7 @@ class _BrowseTabState extends State<BrowseTab> {
   Widget _buildMoviesGrid(List<MovieModel> movies) {
     if (movies.isEmpty) {
       return const Center(
-        child: Text(
-          "No movies found for this genre",
-          style: TextStyle(color: Colors.white70),
-        ),
+        child: Text("No movies found", style: TextStyle(color: Colors.white70)),
       );
     }
 
@@ -145,9 +137,8 @@ class _BrowseTabState extends State<BrowseTab> {
       itemBuilder: (context, index) {
         final movie = movies[index];
         return InkWell(
-          onTap: () {
-            Navigator.pushNamed(context, 'details', arguments: movie);
-          },
+          onTap: () =>
+              Navigator.pushNamed(context, 'details', arguments: movie),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(15),
             child: Stack(
@@ -157,47 +148,41 @@ class _BrowseTabState extends State<BrowseTab> {
                   fit: BoxFit.cover,
                   width: double.infinity,
                   height: double.infinity,
-                  errorBuilder: (context, error, stackTrace) => const Center(
-                    child: Icon(Icons.broken_image, color: Colors.grey),
-                  ),
                 ),
-                Positioned(
-                  top: 10,
-                  left: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.star,
-                          color: Color(0XFFF6BD00),
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          movie.rating.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                _buildRatingBadge(movie.rating.toString()),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildRatingBadge(String rating) {
+    return Positioned(
+      top: 10,
+      left: 10,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.7),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.star, color: Color(0XFFF6BD00), size: 16),
+            const SizedBox(width: 4),
+            Text(
+              rating,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

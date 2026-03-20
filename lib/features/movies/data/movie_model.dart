@@ -36,12 +36,13 @@ class MovieModel {
       smallCoverImage: json['small_cover_image'] as String?,
       mediumCoverImage: json['medium_cover_image'] as String?,
       largeCoverImage: json['large_cover_image'] as String?,
-      summary: json['description_full'] as String?,
+
+      summary:
+          json['description_full'] as String? ?? json['summary'] as String?,
       runtime: json['runtime'] as int?,
       genres: json['genres'] != null
           ? List<String>.from(json['genres'].map((x) => x.toString()))
           : [],
-       
       cast: json['cast'] != null
           ? (json['cast'] as List).map((i) => CastMember.fromJson(i)).toList()
           : [],
@@ -57,7 +58,7 @@ class MovieModel {
       'small_cover_image': smallCoverImage,
       'medium_cover_image': mediumCoverImage,
       'large_cover_image': largeCoverImage,
-      'summary': summary,
+      'description_full': summary,
       'runtime': runtime,
       'genres': genres,
       'cast': cast?.map((i) => i.toJson()).toList(),
@@ -67,23 +68,28 @@ class MovieModel {
 
 class CastMember {
   final String? name;
-  final String? character;
+  final String? characterName;
   final String? photoUrl;
 
-  CastMember({this.name, this.character, this.photoUrl});
+  CastMember({this.name, this.characterName, this.photoUrl});
 
   factory CastMember.fromJson(Map<String, dynamic> json) {
     return CastMember(
-      name: json['name'],
-      character: json['character_name'],
-      photoUrl: json['url_small_image'],
+      name: json['name'] as String?,
+      characterName: json['character_name'] as String?,
+
+      photoUrl:
+          (json['url_small_image'] != null &&
+              json['url_small_image'].toString().isNotEmpty)
+          ? json['url_small_image'] as String?
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'name': name,
-      'character_name': character,
+      'character_name': characterName,
       'url_small_image': photoUrl,
     };
   }

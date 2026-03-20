@@ -8,42 +8,48 @@ class MovieCubit extends Cubit<MovieState> {
 
   MovieCubit(this.movieRepository) : super(MovieInitial());
 
-  List<MovieModel> allMovies = [];
-  List<MovieModel> suggestedMovies = [];
-  List<MovieModel> actionMovies = [];
-  List<MovieModel> historyMovies = [];
+  List<MovieModel> _suggestedMovies = [];
+  List<MovieModel> _actionMovies = [];
+  List<MovieModel> _historyMovies = [];
+
+  List<MovieModel> get historyMovies => _historyMovies;
 
   Future<void> getHomeMovies() async {
     emit(MovieLoading());
     try {
       final results = await Future.wait([
-        movieRepository.getMovieSuggestions(10),
+        movieRepository.getMoviesByGenre('sci-fi'),
         movieRepository.getMoviesByGenre('Action'),
       ]);
 
-      suggestedMovies = results[0];
-      actionMovies = results[1];
-      allMovies = [...suggestedMovies, ...actionMovies];
+      _suggestedMovies = results[0];
+      _actionMovies = results[1];
 
       _emitSuccess();
     } catch (e) {
-      emit(MovieError(e.toString()));
+      emit(MovieError("Failed to fetch movies: ${e.toString()}"));
     }
   }
 
   void addToHistory(MovieModel movie) {
-    historyMovies.removeWhere((item) => item.id == movie.id);
-    historyMovies.insert(0, movie);
-    if (historyMovies.length > 20) historyMovies.removeLast();
+    _historyMovies.removeWhere((item) => item.id == movie.id);
+
+    _historyMovies.insert(0, movie);
+
+    if (_historyMovies.length > 20) {
+      _historyMovies.removeLast();
+    }
+
     _emitSuccess();
   }
 
   void _emitSuccess() {
     emit(
       MovieSuccess(
-        suggested: suggestedMovies,
-        action: actionMovies,
-        all: allMovies,
+        suggested: _suggestedMovies,
+        action: _actionMovies,
+        history: _historyMovies,
+        all: [],
       ),
     );
   }

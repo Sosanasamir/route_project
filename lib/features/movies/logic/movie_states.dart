@@ -20,5 +20,6 @@ class MovieSuccess extends MovieState {
     required this.suggested,
     required this.action,
     required this.all,
+    required List<MovieModel> history,
   });
 }

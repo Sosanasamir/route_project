@@ -33,7 +33,11 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     final state = context.read<ProfileCubit>().state;
     if (state is ProfileSuccess) {
       nameController.text = state.user.displayName ?? "";
-      selectedAvatar = state.user.photoURL ?? 'assets/images/avatar1.png';
+
+      selectedAvatar =
+          (state.user.photoURL != null && state.user.photoURL!.isNotEmpty)
+          ? state.user.photoURL!
+          : 'assets/images/avatar1.png';
     }
   }
 
@@ -91,7 +95,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
           style: TextStyle(color: Colors.white),
         ),
         content: const Text(
-          "Are you sure you want to delete your account? This action cannot be undone.",
+          "Are you sure? This will permanently delete your movie history and watchlist.",
           style: TextStyle(color: Colors.white70),
         ),
         actions: [
@@ -120,14 +124,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
       listener: (context, state) {
         if (state is ProfileDeleted) {
           Navigator.pushNamedAndRemoveUntil(context, 'login', (route) => false);
-        } else if (state is ProfileSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Profile updated!"),
-              backgroundColor: Colors.green,
-            ),
-          );
-          Navigator.pop(context);
         } else if (state is ProfileResetEmailSent) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -138,6 +134,13 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
         } else if (state is ProfileError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+          );
+        } else if (state is ProfileSuccess && Navigator.canPop(context)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Profile Updated!"),
+              backgroundColor: Colors.green,
+            ),
           );
         }
       },
@@ -161,98 +164,85 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
-              body: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    GestureDetector(
-                      onTap: isLoading ? null : _showAvatarPicker,
-                      child: Stack(
+              body: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
                         children: [
-                          CircleAvatar(
-                            radius: 60,
-                            backgroundColor: Colors.transparent,
-                            child: Image.asset(selectedAvatar),
+                          _buildAvatarSection(isLoading),
+                          const SizedBox(height: 40),
+                          _buildTextField(
+                            nameController,
+                            Icons.person,
+                            "Name",
+                            isLoading,
                           ),
-                          const Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: CircleAvatar(
-                              backgroundColor: Color(0xFFF6BD00),
-                              radius: 18,
-                              child: Icon(
-                                Icons.edit,
-                                color: Colors.black,
-                                size: 20,
+                          const SizedBox(height: 15),
+                          _buildTextField(
+                            phoneController,
+                            Icons.phone,
+                            "Phone Number",
+                            isLoading,
+                            keyboardType: TextInputType.phone,
+                          ),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: isLoading
+                                  ? null
+                                  : () => Navigator.pushNamed(
+                                      context,
+                                      'forget_password_view',
+                                    ),
+                              child: const Text(
+                                "Reset Password?",
+                                style: TextStyle(
+                                  color: Color(0xFFF6BD00),
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 40),
-
-                    _buildTextField(
-                      nameController,
-                      Icons.person,
-                      "Name",
-                      isLoading,
-                    ),
-                    const SizedBox(height: 15),
-                    _buildTextField(
-                      phoneController,
-                      Icons.phone,
-                      "Phone Number",
-                      isLoading,
-                      keyboardType: TextInputType.phone,
-                    ),
-
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: isLoading
-                            ? null
-                            : () =>
-                                  context.read<ProfileCubit>().resetPassword(),
-                        child: const Text(
-                          "Reset Password?",
-                          style: TextStyle(
-                            color: Color(0xFFF6BD00),
-                            fontWeight: FontWeight.bold,
-                          ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildFullWidthButton(
+                          "Delete Account",
+                          const Color(0xFFE82626).withOpacity(0.1),
+                          const Color(0xFFE82626),
+                          isLoading ? null : _confirmDelete,
+                          isBordered: true,
                         ),
-                      ),
+                        const SizedBox(height: 15),
+                        _buildFullWidthButton(
+                          "Update Data",
+                          const Color(0xFFF6BD00),
+                          Colors.black,
+                          isLoading
+                              ? null
+                              : () {
+                                  if (nameController.text.trim().isNotEmpty) {
+                                    context.read<ProfileCubit>().updateUserData(
+                                      nameController.text.trim(),
+                                      selectedAvatar,
+                                    );
+                                  }
+                                },
+                        ),
+                      ],
                     ),
-
-                    const SizedBox(height: 30),
-
-                    _buildButton(
-                      "Delete Account",
-                      const Color(0xFFE82626),
-                      Colors.white,
-                      isLoading ? null : _confirmDelete,
-                    ),
-                    const SizedBox(height: 15),
-                    _buildButton(
-                      "Update Data",
-                      const Color(0xFFF6BD00),
-                      Colors.black,
-                      isLoading
-                          ? null
-                          : () {
-                              if (nameController.text.trim().isNotEmpty) {
-                                context.read<ProfileCubit>().updateUserData(
-                                  nameController.text.trim(),
-                                  selectedAvatar,
-                                );
-                              }
-                            },
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-
             if (isLoading)
               Container(
                 color: Colors.black54,
@@ -263,6 +253,30 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildAvatarSection(bool isLoading) {
+    return GestureDetector(
+      onTap: isLoading ? null : _showAvatarPicker,
+      child: Stack(
+        children: [
+          CircleAvatar(
+            radius: 60,
+            backgroundColor: Colors.grey[900],
+            backgroundImage: AssetImage(selectedAvatar),
+          ),
+          const Positioned(
+            bottom: 0,
+            right: 0,
+            child: CircleAvatar(
+              backgroundColor: Color(0xFFF6BD00),
+              radius: 18,
+              child: Icon(Icons.edit, color: Colors.black, size: 20),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -292,7 +306,13 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     );
   }
 
-  Widget _buildButton(String text, Color bg, Color textCol, VoidCallback? tap) {
+  Widget _buildFullWidthButton(
+    String text,
+    Color bg,
+    Color textCol,
+    VoidCallback? tap, {
+    bool isBordered = false,
+  }) {
     return SizedBox(
       width: double.infinity,
       height: 55,
@@ -300,7 +320,8 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
         onPressed: tap,
         style: ElevatedButton.styleFrom(
           backgroundColor: bg,
-          disabledBackgroundColor: bg.withOpacity(0.3),
+          elevation: 0,
+          side: isBordered ? BorderSide(color: textCol, width: 1) : null,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
@@ -309,7 +330,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
           text,
           style: TextStyle(
             color: textCol,
-            fontSize: 18,
+            fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
         ),
