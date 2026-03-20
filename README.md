@@ -99,5 +99,6 @@ Migrated from local SQLite to **Firebase Firestore** to ensure user data persist
 
 ---
 
-### Key Features:
+### Figma Design:
  
+<img width="912" height="676" alt="image" src="https://github.com/user-attachments/assets/8bc2111c-7b35-418f-b5a2-86b297a20432" />
